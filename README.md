@@ -372,3 +372,47 @@ result = app.invoke({
 for m in result["messages"]:
     m.pretty_print()
 ```
+
+## 可视化功能
+
+本框架提供了强大的可视化功能，可以展示多智能体系统的通信拓扑和工作流程。以下是使用说明：
+
+### 通信拓扑可视化
+通信拓扑可视化展示了代理之间的通信链路、带宽和协议类型。可以通过以下方式访问：
+
+```bash
+# 运行后将在当前目录生成topology.png
+curl http://localhost:8000/visualization/topology
+```
+
+可视化内容包括：
+- 节点：代表各个智能体
+- 边：代表通信链路
+  - 实线表示REST协议
+  - 虚线表示gRPC协议
+  - 线条粗细表示带宽大小
+
+### 工作流程可视化
+工作流程可视化展示了多智能体系统的决策流程和交互模式。可以通过以下方式访问：
+
+```bash
+# 运行后将在当前目录生成workflow.png
+curl http://localhost:8000/visualization/workflow
+```
+
+可视化内容包括：
+- 节点：代表不同类型的代理（主管代理为橙色）
+- 边：代表代理间的交互
+  - 实线表示有明确条件的转移
+  - 虚线表示默认转移
+
+### 开发模式下的可视化
+在开发模式下运行时，系统会自动生成示例可视化图表：
+
+```bash
+langgraph dev
+```
+
+启动后访问以下链接查看可视化：
+- http://localhost:8000/visualization/topology
+- http://localhost:8000/visualization/workflow
