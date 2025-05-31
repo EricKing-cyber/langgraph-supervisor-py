@@ -464,7 +464,7 @@ def create_top_level_supervisor(
         builder.add_node(sv.name, sv)
 
     # 添加基础监督者节点
-    builder.add_node("supervisor", base_supervisor.compile())
+    builder.add_node("supervisor", base_supervisor)
 
     # 添加边
     builder.add_edge("__start__", "supervisor")

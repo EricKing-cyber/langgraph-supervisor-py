@@ -461,7 +461,7 @@ def create_top_level_supervisor(
 
     # 添加中间层监督者节点
     for sv in middle_supervisors:
-        builder.add_node(sv.name, sv)
+        builder.add_node(sv.name, sv.compile())
 
     # 添加基础监督者节点
     builder.add_node("supervisor", base_supervisor.compile())

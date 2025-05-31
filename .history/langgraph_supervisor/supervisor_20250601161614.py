@@ -397,7 +397,7 @@ def create_supervisor(
 
 
 def create_top_level_supervisor(
-    middle_supervisors: list[Pregel],
+    middle_supervisors: list[StateGraph],
     model: LanguageModelLike,
     prompt: Optional[Prompt] = None,
     tools: list[BaseTool | Callable] | ToolNode | None = None,

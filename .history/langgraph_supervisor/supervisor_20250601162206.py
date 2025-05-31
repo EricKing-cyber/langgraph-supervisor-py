@@ -397,7 +397,7 @@ def create_supervisor(
 
 
 def create_top_level_supervisor(
-    middle_supervisors: list[Pregel],
+    middle_supervisors: list[StateGraph],
     model: LanguageModelLike,
     prompt: Optional[Prompt] = None,
     tools: list[BaseTool | Callable] | ToolNode | None = None,
@@ -414,7 +414,7 @@ def create_top_level_supervisor(
     """创建多层级监督者系统
 
     Args:
-        middle_supervisors: 中间层监督者列表
+        middle_supervisors: 中间层监督者列表（StateGraph对象）
         model: 语言模型
         prompt: 系统提示词
         tools: 工具列表
@@ -434,40 +434,33 @@ def create_top_level_supervisor(
     if not middle_supervisors:
         raise ValueError("必须提供至少一个中间层监督者")
 
-    # 获取中间层监督者名称
-    agent_names = {sv.name for sv in middle_supervisors}
-    if len(agent_names) != len(middle_supervisors):
-        raise ValueError("中间层监督者名称必须唯一")
+    # 创建状态图
+    builder = StateGraph(state_schema or AgentState)
 
-    # 创建基础监督者
-    base_supervisor = create_supervisor(
-        agents=middle_supervisors,
+    # 添加中间层监督者节点
+    for i, sv in enumerate(middle_supervisors):
+        node_name = f"{supervisor_name}_sub_{i}"
+        builder.add_node(node_name, sv)
+
+    # 创建顶层监督者代理
+    supervisor_agent = create_react_agent(
+        name=supervisor_name,
         model=model,
         tools=tools,
         prompt=prompt,
-        response_format=response_format,
-        parallel_tool_calls=parallel_tool_calls,
         state_schema=state_schema,
-        config_schema=config_schema,
-        output_mode=output_mode,
-        add_handoff_messages=add_handoff_messages,
-        handoff_tool_prefix=handoff_tool_prefix,
-        supervisor_name=supervisor_name,
-        include_agent_name=include_agent_name
+        response_format=response_format,
     )
 
-    # 创建状态图
-    builder = StateGraph(base_supervisor.schema)
-
-    # 添加中间层监督者节点
-    for sv in middle_supervisors:
-        builder.add_node(sv.name, sv)
-
-    # 添加基础监督者节点
-    builder.add_node("supervisor", base_supervisor.compile())
+    # 添加顶层监督者节点
+    builder.add_node(supervisor_name, supervisor_agent)
 
     # 添加边
-    builder.add_edge("__start__", "supervisor")
-    builder.add_edge("supervisor", "__end__")
+    builder.add_edge("__start__", supervisor_name)
+    for i in range(len(middle_supervisors)):
+        node_name = f"{supervisor_name}_sub_{i}"
+        builder.add_edge(supervisor_name, node_name)
+        builder.add_edge(node_name, supervisor_name)
+    builder.add_edge(supervisor_name, "__end__")
 
     return builder

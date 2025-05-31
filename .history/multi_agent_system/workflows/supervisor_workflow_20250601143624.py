@@ -1,4 +1,4 @@
-from langgraph_supervisor.supervisor import create_supervisor,create_top_level_supervisor
+from langgraph_supervisor.supervisor import create_supervisor
 from multi_agent_system.strategies.game_theory import ShapleyValueStrategy, NashEquilibriumAllocation
 from multi_agent_system.protocols.communication import DynamicRoutingProtocol, CommunicationTopology
 from multi_agent_system.strategies import AgentProfile  # 导入AgentProfile类
@@ -8,13 +8,12 @@ from multi_agent_system.visualization.workflow_visualizer import WorkflowVisuali
 from typing import List, Dict, Any, Optional
 
 
-def build_supervisor_workflow(agents, model, supervisor_name):
+def build_supervisor_workflow(agents, model):
     """构建监督者工作流"""
     return create_supervisor(
         agents=agents,
         model=model,
-        prompt="你是一个团队监督者，管理数学专家和天气专家。对于数学问题，使用math_expert；对于天气问题，使用weather_expert。",
-        supervisor_name= supervisor_name or "middle_supervisor"
+        prompt="你是一个团队监督者，管理数学专家和天气专家。对于数学问题，使用math_expert；对于天气问题，使用weather_expert。"
     )
 
 def build_top_level_supervisor(middle_supervisors, model):
@@ -107,5 +106,4 @@ class EnhancedSupervisor:
         workflow_visualizer.visualize(str(output_path) if output_path else None)
 
 __all__ = ["build_supervisor_workflow",
-            "EnhancedSupervisor",
-            "build_top_level_supervisor"]
+            "EnhancedSupervisor"]

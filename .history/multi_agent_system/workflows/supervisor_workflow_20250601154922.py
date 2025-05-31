@@ -14,7 +14,7 @@ def build_supervisor_workflow(agents, model, supervisor_name):
         agents=agents,
         model=model,
         prompt="你是一个团队监督者，管理数学专家和天气专家。对于数学问题，使用math_expert；对于天气问题，使用weather_expert。",
-        supervisor_name= supervisor_name or "middle_supervisor"
+        supervisor_name="middle_supervisor"
     )
 
 def build_top_level_supervisor(middle_supervisors, model):

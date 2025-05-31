@@ -1,4 +1,4 @@
-from .supervisor_workflow import *
+from supervisor_workflow import *
 
 __all__ = [
     "build_supervisor_workflow",

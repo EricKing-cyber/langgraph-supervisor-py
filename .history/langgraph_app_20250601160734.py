@@ -14,13 +14,9 @@ weather_agent = create_weather_agent("granite3.3:8b")
 math_team_graph = build_supervisor_workflow([math_agent], model, supervisor_name="math_team")
 weather_team_graph = build_supervisor_workflow([weather_agent], model, supervisor_name="weather_team")
 
-# 编译为可运行图并指定唯一名称
-math_team = math_team_graph.compile(name="math_team")
-weather_team = weather_team_graph.compile(name="weather_team")
-
 # 创建顶层监督者
 supervisor = build_top_level_supervisor(
-    middle_supervisors=[math_team, weather_team],
+    middle_supervisors=[math_team_graph, weather_team_graph],
     model=model,
 )
 
