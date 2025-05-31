@@ -1,0 +1,20 @@
+{
+    "description": "多代理系统工作流",
+    "version": "0.1.0",
+    "dependencies": [
+        ".",
+        "langgraph",
+        "langchain-core",
+        "networkx",
+        "matplotlib",
+        "plotly"
+    ],
+    "graphs": {
+        "app": "./langgraph_app.py:create_graph"
+    },
+    "env": {
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}"
+    },
+    "python_version": "3.11"
+} 
