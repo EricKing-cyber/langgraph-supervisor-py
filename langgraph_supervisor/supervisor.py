@@ -1,3 +1,8 @@
+#=============================
+# description 
+# 用于构建多代理系统中的主管代理（Supervisor），它负责协调多个子代理之间的任务分配和消息流转。
+# 它是整个多代理系统的核心控制器。
+#=============================
 import inspect
 from typing import Any, Callable, Literal, Optional, Sequence, Type, Union, cast, get_args
 from uuid import UUID, uuid5
@@ -44,7 +49,7 @@ def _supports_disable_parallel_tool_calls(model: LanguageModelLike) -> bool:
     if not isinstance(model, BaseChatModel):
         return False
 
-    if hasattr(model, "model_name") and model.model_name in MODELS_NO_PARALLEL_TOOL_CALLS:
+    if getattr(model, "model_name", None) in MODELS_NO_PARALLEL_TOOL_CALLS:
         return False
 
     if not hasattr(model, "bind_tools"):
@@ -89,7 +94,7 @@ def _make_call_agent(
         }
 
     def call_agent(state: dict, config: RunnableConfig) -> dict:
-        thread_id = config["configurable"].get("thread_id")
+        thread_id = config.get("configurable", {}).get("thread_id")
         output = agent.invoke(
             state,
             patch_configurable(
@@ -102,7 +107,7 @@ def _make_call_agent(
         return _process_output(output)
 
     async def acall_agent(state: dict, config: RunnableConfig) -> dict:
-        thread_id = config["configurable"].get("thread_id")
+        thread_id = config.get("configurable", {}).get("thread_id")
         output = await agent.ainvoke(
             state,
             patch_configurable(

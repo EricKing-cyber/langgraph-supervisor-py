@@ -1,0 +1,31 @@
+{
+    "name": "multi-agent-system",
+    "description": "A multi-agent system example built with LangGraph",
+    "version": "0.1.0",
+    "dependencies": [
+        ".",
+        "langgraph>=0.3.5",
+        "langgraph-prebuilt>=0.1.7",
+        "langchain-core>=0.3.40",
+        "langchain-openai",
+        "networkx>=2.8",
+        "matplotlib>=3.7",
+        "plotly>=5.14.0"
+    ],
+    "graphs": {
+        "supervisor": {
+            "path": "./langgraph_app.py",
+            "function": "create_graph"
+        }
+    },
+    "env": {
+        "MODEL_TYPE": "local",
+        "LOCAL_MODEL_URL": "http://localhost:11434/v1",
+        "LOCAL_MODEL_NAME": "cogito:14b"
+    },
+    "python_version": "3.11",
+    "visualization": {
+        "enabled": true,
+        "output_dir": "static/img"
+    }
+} 

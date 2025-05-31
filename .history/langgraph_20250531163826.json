@@ -1,0 +1,15 @@
+{
+    "name": "multi-agent-system",
+    "description": "A multi-agent system example built with LangGraph",
+    "version": "0.1.0",
+    "dependencies": ["."],
+    "graphs": {
+        "supervisor": "LangGraph_app:app"
+    },
+    "env": {
+        "MODEL_TYPE": "local",
+        "LOCAL_MODEL_URL": "http://localhost:11434/v1",
+        "LOCAL_MODEL_NAME": "cogito:14b"
+    },
+    "python_version": "3.11"
+} 
