@@ -98,4 +98,5 @@ def build_top_level_supervisor(middle_supervisors, model):
 #         workflow_visualizer.visualize(str(output_path) if output_path else None)
 
 __all__ = ["build_supervisor_workflow",
+            # "EnhancedSupervisor",
             "build_top_level_supervisor"]

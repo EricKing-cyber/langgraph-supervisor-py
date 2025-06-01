@@ -68,6 +68,18 @@ def create_math_agent(agent_type: str = "algebra", model: str | None = "default_
     
     return agent._create_agent()
 
+
+# 从 langgraph_supervisor 导入交接工具
+from langgraph_supervisor import handoff
+
+# 创建 algebra_agent 到 calculus_agent 的交接工具
+algebra_to_calculus_tool = handoff.create_handoff_tool(agent_name="calculus_expert")
+
+# 创建 calculus_agent 到 algebra_agent 的交接工具
+calculus_to_algebra_tool = handoff.create_handoff_tool(agent_name="algebra_expert")
+
 __all__ = [
-    "create_math_agent"
+    "create_math_agent",
+    "algebra_to_calculus_tool",
+    "calculus_to_algebra_tool"
 ]
