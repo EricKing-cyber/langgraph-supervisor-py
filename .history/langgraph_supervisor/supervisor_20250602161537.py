@@ -442,10 +442,10 @@ def create_top_level_supervisor(
 
     # 创建基础监督者
     compiled_agents = []
-    for i, (sv, name) in enumerate(zip(middle_supervisors, agent_names)):
+    for i, sv in enumerate(middle_supervisors):
         if isinstance(sv, StateGraph):
-            # 使用传入的 agent_names 中的名称
             # 仅编译一次并保留实例
+            name = getattr(sv, 'name', f'agent_{i}')
             compiled_graph = sv.compile(name=name)
             compiled_agents.append(compiled_graph)
         else:
@@ -470,22 +470,9 @@ def create_top_level_supervisor(
     # 创建状态图
     builder = StateGraph(base_supervisor.schema)
 
-    # 直接复用已编译的实例
-    for sv in middle_supervisors:
-        if isinstance(sv, NamedStateGraph):
-            # 确保使用已编译的Pregel实例
-            compiled = next((a for a in compiled_agents if a.name == sv.name), None)
-            if compiled:
-                builder.add_node(sv.name, compiled)
-        elif isinstance(sv, StateGraph):
-            # 使用已缓存的编译结果
-            name = getattr(sv, 'name', '')
-            if name:  # 使用原始名称查找已编译实例
-                compiled = next((a for a in compiled_agents if a.name == name), None)
-                if compiled:
-                    builder.add_node(name, compiled)
-        else:
-            builder.add_node(sv.name, sv)
+    # 添加中间层监督者节点
+    for sv, name in zip(middle_supervisors, agent_names):
+        builder.add_node(name, sv)
 
     # 添加基础监督者节点
     builder.add_node("supervisor", base_supervisor.compile())
