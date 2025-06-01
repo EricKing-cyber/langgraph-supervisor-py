@@ -442,10 +442,10 @@ def create_top_level_supervisor(
 
     # 创建基础监督者
     compiled_agents = []
-    for i, (sv, name) in enumerate(zip(middle_supervisors, agent_names)):
+    for i, sv in enumerate(middle_supervisors):
         if isinstance(sv, StateGraph):
-            # 使用传入的 agent_names 中的名称
             # 仅编译一次并保留实例
+            name = getattr(sv, 'name', f'agent_{i}')
             compiled_graph = sv.compile(name=name)
             compiled_agents.append(compiled_graph)
         else:

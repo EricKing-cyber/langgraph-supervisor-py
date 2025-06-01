@@ -15,11 +15,12 @@ weather_agent = create_weather_agent("granite3.3:8b")
 math_team_graph = build_supervisor_workflow([algebra_agent, calculus_agent], model)
 weather_team_graph = build_supervisor_workflow([weather_agent], model)
 
+
 # 创建顶层监督者
 supervisor = build_top_level_supervisor(
     middle_supervisors=[
-        (math_team_graph, "math_team"),
-        (weather_team_graph, "weather_team")
+        (math_team_graph),
+        (weather_team_graph)
     ],
     model=model,
 )

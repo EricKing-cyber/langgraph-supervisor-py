@@ -10,8 +10,7 @@ from uuid import UUID, uuid5
 from langchain_core.language_models import BaseChatModel, LanguageModelLike
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
-from langgraph.graph import StateGraph, START, END  # 导入缺失的常量
-from langgraph_supervisor.wrapper import NamedStateGraph  # 使用正确的包装类
+from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
 from langgraph.prebuilt.chat_agent_executor import (
     AgentState,
@@ -199,7 +198,7 @@ def _prepare_tool_node(
 
 
 def create_supervisor(
-    agents: list[Pregel],
+    agents: list[Union[StateGraph, Pregel]],
     *,
     model: LanguageModelLike,
     tools: list[BaseTool | Callable] | ToolNode | None = None,
@@ -441,18 +440,8 @@ def create_top_level_supervisor(
         raise ValueError("中间层监督者名称必须唯一")
 
     # 创建基础监督者
-    compiled_agents = []
-    for i, (sv, name) in enumerate(zip(middle_supervisors, agent_names)):
-        if isinstance(sv, StateGraph):
-            # 使用传入的 agent_names 中的名称
-            # 仅编译一次并保留实例
-            compiled_graph = sv.compile(name=name)
-            compiled_agents.append(compiled_graph)
-        else:
-            compiled_agents.append(sv)
-
     base_supervisor = create_supervisor(
-        agents=compiled_agents,
+        agents=middle_supervisors,
         model=model,
         tools=tools,
         prompt=prompt,
@@ -470,22 +459,9 @@ def create_top_level_supervisor(
     # 创建状态图
     builder = StateGraph(base_supervisor.schema)
 
-    # 直接复用已编译的实例
-    for sv in middle_supervisors:
-        if isinstance(sv, NamedStateGraph):
-            # 确保使用已编译的Pregel实例
-            compiled = next((a for a in compiled_agents if a.name == sv.name), None)
-            if compiled:
-                builder.add_node(sv.name, compiled)
-        elif isinstance(sv, StateGraph):
-            # 使用已缓存的编译结果
-            name = getattr(sv, 'name', '')
-            if name:  # 使用原始名称查找已编译实例
-                compiled = next((a for a in compiled_agents if a.name == name), None)
-                if compiled:
-                    builder.add_node(name, compiled)
-        else:
-            builder.add_node(sv.name, sv)
+    # 添加中间层监督者节点
+    for sv, name in zip(middle_supervisors, agent_names):
+        builder.add_node(name, sv)
 
     # 添加基础监督者节点
     builder.add_node("supervisor", base_supervisor.compile())

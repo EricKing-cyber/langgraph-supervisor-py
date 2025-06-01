@@ -10,8 +10,7 @@ from uuid import UUID, uuid5
 from langchain_core.language_models import BaseChatModel, LanguageModelLike
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
-from langgraph.graph import StateGraph, START, END  # 导入缺失的常量
-from langgraph_supervisor.wrapper import NamedStateGraph  # 使用正确的包装类
+from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
 from langgraph.prebuilt.chat_agent_executor import (
     AgentState,
@@ -34,6 +33,7 @@ from langgraph_supervisor.handoff import (
     create_handoff_back_messages,
     create_handoff_tool,
 )
+from langgraph_supervisor.wrapper import NamedStateGraph
 
 OutputMode = Literal["full_history", "last_message"]
 """Mode for adding agent outputs to the message history in the multi-agent workflow
@@ -398,9 +398,8 @@ def create_supervisor(
 
 
 def create_top_level_supervisor(
-    middle_supervisors: list[Pregel],
+    middle_supervisors: list[NamedStateGraph],
     model: LanguageModelLike,
-    agent_names: list[str],
     prompt: Optional[Prompt] = None,
     tools: list[BaseTool | Callable] | ToolNode | None = None,
     response_format: Optional[Union[StructuredResponseSchema, tuple[str, StructuredResponseSchema]]] = None,
@@ -436,23 +435,13 @@ def create_top_level_supervisor(
     if not middle_supervisors:
         raise ValueError("必须提供至少一个中间层监督者")
 
-    # 获取中间层监督者名称
-    if len(set(agent_names)) != len(agent_names):
+    agent_names = {sv.name for sv in middle_supervisors}
+    if len(agent_names) != len(middle_supervisors):
         raise ValueError("中间层监督者名称必须唯一")
 
     # 创建基础监督者
-    compiled_agents = []
-    for i, (sv, name) in enumerate(zip(middle_supervisors, agent_names)):
-        if isinstance(sv, StateGraph):
-            # 使用传入的 agent_names 中的名称
-            # 仅编译一次并保留实例
-            compiled_graph = sv.compile(name=name)
-            compiled_agents.append(compiled_graph)
-        else:
-            compiled_agents.append(sv)
-
     base_supervisor = create_supervisor(
-        agents=compiled_agents,
+        agents=middle_supervisors,  # 这里传入的是 NamedStateGraph 列表
         model=model,
         tools=tools,
         prompt=prompt,
@@ -467,25 +456,11 @@ def create_top_level_supervisor(
         include_agent_name=include_agent_name
     )
 
-    # 创建状态图
     builder = StateGraph(base_supervisor.schema)
 
-    # 直接复用已编译的实例
+    # 添加中间层监督者节点
     for sv in middle_supervisors:
-        if isinstance(sv, NamedStateGraph):
-            # 确保使用已编译的Pregel实例
-            compiled = next((a for a in compiled_agents if a.name == sv.name), None)
-            if compiled:
-                builder.add_node(sv.name, compiled)
-        elif isinstance(sv, StateGraph):
-            # 使用已缓存的编译结果
-            name = getattr(sv, 'name', '')
-            if name:  # 使用原始名称查找已编译实例
-                compiled = next((a for a in compiled_agents if a.name == name), None)
-                if compiled:
-                    builder.add_node(name, compiled)
-        else:
-            builder.add_node(sv.name, sv)
+        builder.add_node(sv.name, sv.graph)  # 使用包装器中的 graph 实例
 
     # 添加基础监督者节点
     builder.add_node("supervisor", base_supervisor.compile())
