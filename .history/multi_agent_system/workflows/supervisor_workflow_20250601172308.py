@@ -13,7 +13,7 @@ def build_supervisor_workflow(agents, model):
     return create_supervisor(
         agents=agents,
         model=model,
-        prompt="你是一个团队监督者，管理数学专家和天气专家。对于代数问题，使用algebra_expert；对于微积分问题，使用calculus_expert。",
+        prompt="你是一个团队监督者，管理数学专家和天气专家。对于数学问题，使用math_expert；对于天气问题，使用weather_expert。",
     )
 
 def build_top_level_supervisor(middle_supervisors, model):

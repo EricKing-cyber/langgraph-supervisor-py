@@ -1,47 +1,73 @@
 # math_agent.py
 from langgraph.pregel import Pregel
 from langgraph.prebuilt import create_react_agent
-from ..tools.math_tools import *  # 导入已注册的工具函数
+from langchain_core.tools import BaseTool, tool
 from langchain_core.language_models import LanguageModelLike
-from typing import Union, Dict, Any
+from typing import Union, Dict, Any, List, Optional
+from abc import ABC
 
-class MathAgent(Pregel):
-    """数学计算代理"""
-    def __init__(self, name: str):
-        # 使用空的节点和通道初始化Pregel基类
-        super().__init__(
-            nodes={},
-            channels={},
-            output_channels="",
-            input_channels=""
+
+class MathAgent(ABC):
+    """数学代理基类，定义通用接口"""
+    def __init__(self, model: LanguageModelLike):
+        self.model = model
+        self.name = ""  # 添加name属性
+
+    def _create_agent(self, tools: List[BaseTool], prompt: str) -> Pregel:  # 明确参数类型和返回类型
+        return create_react_agent(
+            model=self.model,
+            tools=tools,
+            name=self.name,  # 使用实例变量name
+            prompt=prompt
         )
-        self.name = name
-        self.type = "math"
-        
-    def invoke(self, input: Dict[str, Any]) -> Dict[str, Any]:
-        """执行数学计算"""
-        return {"result": "Math calculation result"}
 
-def create_math_agent(model: str | None = "default_model"):
-    """创建数学专家代理"""
+class AlgebraAgent(MathAgent):
+    """代数计算专家代理"""
+    def __init__(self, model: LanguageModelLike):
+        super().__init__(model)
+        # 显式导入工具函数
+        from ..tools.math_tools import calculate_sum, calculate_product
+        self.tools = [calculate_sum, calculate_product]  # type: List[BaseTool]
+        self.name = "algebra_expert"  # 添加唯一名称
+        self.prompt = "你是一个代数专家，擅长进行基本运算和方程求解。"
+
+    def _create_agent(self) -> Pregel:
+        return super()._create_agent(self.tools, self.prompt)
+
+
+class CalculusAgent(MathAgent):
+    """微积分计算专家代理"""
+    def __init__(self, model: LanguageModelLike):
+        super().__init__(model)
+        # 显式导入工具函数
+        from ..tools.math_tools import calculate_integral
+        self.tools = [calculate_integral]  # type: List[BaseTool]
+        self.name = "calculus_expert"  # 添加唯一名称
+        self.prompt = "你是一个微积分专家，擅长进行积分和导数计算。"
+
+    def _create_agent(self) -> Pregel:
+        return super()._create_agent(self.tools, self.prompt)
+
+
+def create_math_agent(agent_type: str = "algebra", model: str | None = "default_model"):
+    """工厂函数创建不同类型的数学代理
+    
+    Args:
+        agent_type: 代理类型 ('algebra' 或 'calculus')
+        model: 模型名称
+    """
     from multi_agent_system.model_utils import create_model
-    print(f"创建数学代理，传入的模型名称: {model}")
-    if isinstance(model, str):
-        model_: Union[LanguageModelLike, None] = create_model(model_name=model)
-        print(f"数学代理使用的模型: {model}")
-    elif model is None:
-        model_ = create_model(model_name="default_model")
-        print("数学代理使用默认模型")
-    if model_ is None:
-        raise ValueError("模型创建失败")
-    return create_react_agent(
-        model=model_,
-        tools=[calculate_sum, calculate_product],  # 使用实际的 Tool 对象
-        name="math_expert",
-        prompt="你是一个数学专家，擅长进行数学计算。请使用提供的工具进行计算。"
-    )
+    model_ = create_model(model_name=model) if isinstance(model, str) else create_model(model_name="default_model")
+    
+    if agent_type == "algebra":
+        agent = AlgebraAgent(model_)
+    elif agent_type == "calculus":
+        agent = CalculusAgent(model_)
+    else:
+        raise ValueError(f"未知的代理类型: {agent_type}")
+    
+    return agent._create_agent()
 
 __all__ = [
-    "create_math_agent",
-     "MathAgent"
+    "create_math_agent"
 ]

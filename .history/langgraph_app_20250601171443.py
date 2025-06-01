@@ -7,13 +7,12 @@ from multi_agent_system.model_utils import *
 model = create_model("cogito:14b")
 
 # 创建代理
-algebra_agent = create_math_agent("algebra", "qwen3:8b")
-calculus_agent = create_math_agent("calculus", "qwen3:8b")
+math_agent = create_math_agent("calculus", "qwen3:8b")
 weather_agent = create_weather_agent("granite3.3:8b")
 
 # 构建中间层监督者图（StateGraph）
-math_team_graph = build_supervisor_workflow([algebra_agent, calculus_agent], model)
-weather_team_graph = build_supervisor_workflow([weather_agent], model)
+math_team_graph = build_supervisor_workflow([math_agent], model, supervisor_name="math_team")
+weather_team_graph = build_supervisor_workflow([weather_agent], model, supervisor_name="weather_team")
 
 # 编译为可运行图并指定唯一名称
 math_team = math_team_graph.compile(name="math_team")
