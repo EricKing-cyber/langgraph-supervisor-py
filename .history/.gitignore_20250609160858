@@ -39,5 +39,5 @@ MANIFEST
 dmypy.json
 .DS_Store
 
-# langgraphconfig
+# Pytest
 langgraph.json

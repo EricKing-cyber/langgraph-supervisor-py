@@ -38,6 +38,3 @@ MANIFEST
 .dmypy.json
 dmypy.json
 .DS_Store
-
-# langgraphconfig
-langgraph.json
