@@ -11,6 +11,7 @@ from langchain_core.language_models import BaseChatModel, LanguageModelLike
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
 from langgraph.graph import StateGraph, START, END  # 导入缺失的常量
+from langgraph_supervisor.wrapper import NamedStateGraph  # 使用正确的包装类
 from langgraph.prebuilt import ToolNode
 from langgraph.prebuilt.chat_agent_executor import (
     AgentState,
@@ -443,6 +444,8 @@ def create_top_level_supervisor(
     compiled_agents = []
     for i, (sv, name) in enumerate(zip(middle_supervisors, agent_names)):
         if isinstance(sv, StateGraph):
+            # 使用传入的 agent_names 中的名称
+            # 仅编译一次并保留实例
             compiled_graph = sv.compile(name=name)
             compiled_agents.append(compiled_graph)
         else:
