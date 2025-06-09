@@ -44,14 +44,25 @@ def build_top_level_supervisor(middle_supervisors, model):
     当收到用户查询时:
     1. 仔细分析用户的查询意图和关键词
     2. 判断哪个团队最适合处理该查询
-    3. 将任务交给相应的团队处理
-    4. 如果是复杂问题需要深入调研，一定要选择deep_research_team
+    3. 使用相应的工具将任务交给对应团队处理
     
-    示例:
-    - "求解方程x²+3x-4=0" → math_team
-    - "北京今天的天气如何？" → weather_team
-    - "请对量子计算的最新进展进行调研分析" → deep_research_team
-    - "帮我研究一下电动汽车行业的未来发展趋势" → deep_research_team
+    【重要】调用团队的方式:
+    - 对于math_team：必须使用工具 transfer_to_math_team 
+    - 对于weather_team：必须使用工具 transfer_to_weather_team
+    - 对于deep_research_team：必须使用工具 transfer_to_deep_research_team
+    
+    你必须通过工具调用来转移任务，而不是仅描述你想要转移任务。必须实际执行工具调用！
+    
+    转移示例:
+    1. 要将任务交给math_team：调用transfer_to_math_team工具
+    2. 要将任务交给weather_team：调用transfer_to_weather_team工具 
+    3. 要将任务交给deep_research_team：调用transfer_to_deep_research_team工具
+    
+    表现良好的案例:
+    - "求解方程x²+3x-4=0" → 调用transfer_to_math_team工具
+    - "北京今天的天气如何？" → 调用transfer_to_weather_team工具
+    - "请对量子计算的最新进展进行调研分析" → 调用transfer_to_deep_research_team工具
+    - "帮我研究一下电动汽车行业的未来发展趋势" → 调用transfer_to_deep_research_team工具
     """
     
     return create_top_level_supervisor(

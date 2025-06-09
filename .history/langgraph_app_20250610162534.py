@@ -12,18 +12,20 @@ algebra_agent = create_math_agent("algebra", "cogito:8b")
 calculus_agent = create_math_agent("calculus", "cogito:8b")
 weather_agent = create_weather_agent("cogito:8b")
 
-# 创建深度研究代理
-ai_research_agent = create_research_agent("ai_technology", "cogito:8b")
-finance_research_agent = create_research_agent("finance", "cogito:8b")
-science_research_agent = create_research_agent("science", "cogito:8b")
-
 # 设置深度研究配置
 deep_research_config = create_research_config(
-    search_api="tavily",
+    search_api="tavily",  # 指定使用tavily搜索API
     ask_for_clarification=True,
-    supervisor_model="qwen3:8b",
-    researcher_model="qwen3:8b"
+    supervisor_model="cogito:8b",  # 使用与其他代理相同的模型
+    researcher_model="cogito:8b",  # 使用与其他代理相同的模型
+    include_source_str=True,  # 包含搜索结果源
+    process_search_results="summarize"  # 处理搜索结果的方式
 )
+
+# 创建深度研究代理，明确指定搜索API
+ai_research_agent = create_research_agent("ai_technology", "cogito:8b", search_api="tavily")
+finance_research_agent = create_research_agent("finance", "cogito:8b", search_api="tavily")
+science_research_agent = create_research_agent("science", "cogito:8b", search_api="tavily")
 
 # 构建中间层监督者图（StateGraph）
 math_team_graph = build_supervisor_workflow([algebra_agent, calculus_agent], model)
