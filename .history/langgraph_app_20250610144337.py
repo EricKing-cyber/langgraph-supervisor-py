@@ -5,17 +5,17 @@ from multi_agent_system.config import *
 
 
 # 创建语言模型实例
-model = create_model("cogito:8b")
+model = create_model("cogito:14b")
 
 # 创建代理
-algebra_agent = create_math_agent("algebra", "cogito:8b")
-calculus_agent = create_math_agent("calculus", "cogito:8b")
-weather_agent = create_weather_agent("cogito:8b")
+algebra_agent = create_math_agent("algebra", "qwen3:8b")
+calculus_agent = create_math_agent("calculus", "qwen3:8b")
+weather_agent = create_weather_agent("granite3.3:8b")
 
 # 创建深度研究代理
-ai_research_agent = create_research_agent("ai_technology", "cogito:8b")
-finance_research_agent = create_research_agent("finance", "cogito:8b")
-science_research_agent = create_research_agent("science", "cogito:8b")
+ai_research_agent = create_research_agent("ai_technology", "qwen3:8b")
+finance_research_agent = create_research_agent("finance", "qwen3:8b")
+science_research_agent = create_research_agent("science", "qwen3:8b")
 
 # 设置深度研究配置
 deep_research_config = create_research_config(

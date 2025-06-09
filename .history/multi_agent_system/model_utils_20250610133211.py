@@ -40,7 +40,7 @@ def create_model(model_name: str | None = None):
     else:
         # 默认使用 cogito:14b 模型
         return ChatOpenAI(
-            model="cogito:8b",
+            model="cogito:14b",
             base_url=ModelConfig.LOCAL_MODEL_URL,
             api_key=SecretStr("no-need")
         )

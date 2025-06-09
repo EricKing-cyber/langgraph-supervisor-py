@@ -1,6 +1,6 @@
 from langchain_openai import ChatOpenAI
 from pydantic import SecretStr
-from multi_agent_system.model_config import ModelConfig
+from multi_agent_system.config import ModelConfig
 
 def create_model(model_name: str | None = None):
     """根据环境变量创建语言模型实例"""       #更细粒度的模型选择
@@ -40,7 +40,7 @@ def create_model(model_name: str | None = None):
     else:
         # 默认使用 cogito:14b 模型
         return ChatOpenAI(
-            model="cogito:8b",
+            model="cogito:14b",
             base_url=ModelConfig.LOCAL_MODEL_URL,
             api_key=SecretStr("no-need")
         )
