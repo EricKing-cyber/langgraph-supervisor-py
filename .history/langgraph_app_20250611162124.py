@@ -23,14 +23,14 @@ deep_research_config = create_research_config(
 )
 
 # 创建原有深度研究代理
-ai_research_agent = create_research_agent("ai_technology", "qwen3:8b", search_api="tavily")
-finance_research_agent = create_research_agent("finance", "qwen3:8b", search_api="tavily")
-science_research_agent = create_research_agent("science", "qwen3:8b", search_api="tavily")
+# ai_research_agent = create_research_agent("ai_technology", "qwen3:8b", search_api="tavily")
+# finance_research_agent = create_research_agent("finance", "qwen3:8b", search_api="tavily")
+# science_research_agent = create_research_agent("science", "qwen3:8b", search_api="tavily")
 
 # 创建新的专业研究代理，分配最合适的搜索工具
-legal_research_agent = create_legal_research_agent("qwen3:8b", search_api="google")
-medical_research_agent = create_medical_research_agent("qwen3:8b", search_api="pubmed")
-engineering_research_agent = create_engineering_research_agent("qwen3:8b", search_api="google")
+# legal_research_agent = create_legal_research_agent("qwen3:8b", search_api="google")
+# medical_research_agent = create_medical_research_agent("qwen3:8b", search_api="pubmed")
+# engineering_research_agent = create_engineering_research_agent("qwen3:8b", search_api="google")
 socialscience_research_agent = create_socialscience_research_agent("qwen3:8b", search_api="tavily")
 
 # 创建气候研究代理，使用多搜索源配置 (arxiv + google)
@@ -47,12 +47,12 @@ weather_team_graph = build_supervisor_workflow([weather_agent], model)
 # 创建包含所有研究代理的深度研究团队
 deep_research_team_graph = build_deep_research_workflow(
     [
-        ai_research_agent, 
-        finance_research_agent, 
-        science_research_agent,
-        legal_research_agent,
-        medical_research_agent,
-        engineering_research_agent,
+        # ai_research_agent, 
+        # finance_research_agent, 
+        # science_research_agent,
+        # legal_research_agent,
+        # medical_research_agent,
+        # engineering_research_agent,
         socialscience_research_agent,
         climate_research_agent
     ], 

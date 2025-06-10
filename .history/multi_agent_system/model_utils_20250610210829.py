@@ -65,9 +65,9 @@ def create_model(model_name: str = None):
     # 默认模型
     #=================================
     else:
-        # 默认使用 qwen3:8b 模型并应用工具调用适配器
+        # 默认使用 cogito:8b 模型并应用工具调用适配器
         model = ChatOllama(
-            model="qwen3:8b",
+            model="cogito:8b",
             temperature=0.1,
             format="json",  # 启用JSON格式 
             tool_system_prompt="使用工具时必须使用JSON格式，format={'name': 'tool_name', 'arguments': {}}。工具调用必须使用JSON格式，不能用文本描述。"

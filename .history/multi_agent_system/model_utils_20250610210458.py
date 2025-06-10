@@ -1,5 +1,5 @@
 from langchain_openai import ChatOpenAI
-from pydantic import SecretStr, Field
+from pydantic import SecretStr
 from multi_agent_system.model_config import ModelConfig
 from langchain_core.language_models import BaseChatModel
 from langchain_core.tools import BaseTool
@@ -24,7 +24,7 @@ def create_model(model_name: str = None):
             format="json",  # 启用JSON格式
             tool_system_prompt="使用工具时必须使用JSON格式，format={'name': 'tool_name', 'arguments': {}}。工具调用必须使用JSON格式，不能用文本描述。"
         )
-        return CogitoToolAdapter(llm=model)  # 使用适配器包装
+        return CogitoToolAdapter(model)  # 使用适配器包装
     
     #=================================
     # OpenAI模型
@@ -65,46 +65,42 @@ def create_model(model_name: str = None):
     # 默认模型
     #=================================
     else:
-        # 默认使用 qwen3:8b 模型并应用工具调用适配器
+        # 默认使用 cogito:8b 模型并应用工具调用适配器
         model = ChatOllama(
-            model="qwen3:8b",
+            model="cogito:8b",
             temperature=0.1,
             format="json",  # 启用JSON格式 
             tool_system_prompt="使用工具时必须使用JSON格式，format={'name': 'tool_name', 'arguments': {}}。工具调用必须使用JSON格式，不能用文本描述。"
         )
-        return CogitoToolAdapter(llm=model)
+        return CogitoToolAdapter(model)
 
 class CogitoToolAdapter(BaseChatModel):
     """Cogito模型的工具调用适配器，处理文本描述的工具调用"""
     
-    # 定义pydantic字段
-    llm: ChatOllama = Field(description="底层语言模型")
-    tools_list: List[BaseTool] = Field(default_factory=list, description="绑定的工具列表")
-    tool_names_dict: Dict[str, BaseTool] = Field(default_factory=dict, description="工具名称映射")
-    tool_pattern: Any = Field(default=None, description="工具调用模式匹配")
-    
-    def __init__(self, llm: ChatOllama, **kwargs):
+    def __init__(self, model: ChatOllama):
         """初始化适配器
         
         Args:
-            llm: 底层模型
+            model: 底层模型
         """
+        super().__init__()
+        self.model = model
         # 编译正则表达式用于匹配描述中的工具调用
-        tool_pattern = re.compile(r"调用(?:工具)?[\s]*(transfer_to_\w+)[\s]*(?:工具)?")
-        # 调用父类初始化
-        super().__init__(llm=llm, tool_pattern=tool_pattern, **kwargs)
-        
+        self.tool_pattern = re.compile(r"调用(?:工具)?[\s]*(transfer_to_\w+)[\s]*(?:工具)?")
+        # 保存工具列表
+        self.tools = []
+    
     @property
     def _llm_type(self) -> str:
         """返回LLM类型"""
-        return f"cogito-tool-adapter"
+        return f"cogito-tool-adapter-{self.model._llm_type}"
     
     def bind_tools(self, tools: List[BaseTool], **kwargs):
         """绑定工具到模型，LangGraph会调用此方法"""
         # 保存工具列表，供后续使用
-        self.tools_list = tools
+        self.tools = tools
         # 创建工具名称映射，用于后续识别
-        self.tool_names_dict = {tool.name: tool for tool in tools}
+        self.tool_names = {tool.name: tool for tool in tools}
         
         # 正确实现bind_tools以避免NotImplementedError
         # 返回自己的实例
@@ -123,7 +119,7 @@ class CogitoToolAdapter(BaseChatModel):
             json_matches = re.findall(r'\{"name":\s*"([^"]+)",\s*"arguments":\s*({[^}]*})\}', message_content)
             if json_matches:
                 for idx, (tool_name, args_str) in enumerate(json_matches):
-                    if tool_name in self.tool_names_dict:
+                    if tool_name in self.tool_names:
                         args = {}
                         try:
                             args = json.loads(args_str)
@@ -144,7 +140,7 @@ class CogitoToolAdapter(BaseChatModel):
         matches = self.tool_pattern.findall(message_content)
         
         for idx, tool_name in enumerate(matches):
-            if tool_name in self.tool_names_dict:
+            if hasattr(self, 'tool_names') and tool_name in self.tool_names:
                 tool_calls.append({
                     'id': f'text_call_{idx}',
                     'name': tool_name,
@@ -158,7 +154,7 @@ class CogitoToolAdapter(BaseChatModel):
         self, messages: List[BaseMessage], stop: List[str] = None, run_manager: CallbackManagerForLLMRun = None, **kwargs
     ) -> Dict[str, Any]:
         """处理生成回复"""
-        original_response = self.llm._generate(messages, stop, run_manager, **kwargs)
+        original_response = self.model._generate(messages, stop, run_manager, **kwargs)
         
         # 获取原始内容
         generation = original_response.generations[0]
@@ -183,7 +179,7 @@ class CogitoToolAdapter(BaseChatModel):
         self, messages: List[BaseMessage], stop: List[str] = None, run_manager: CallbackManagerForLLMRun = None, **kwargs
     ) -> Dict[str, Any]:
         """处理异步生成回复"""
-        original_response = await self.llm._agenerate(messages, stop, run_manager, **kwargs)
+        original_response = await self.model._agenerate(messages, stop, run_manager, **kwargs)
         
         # 获取原始内容
         generation = original_response.generations[0]
@@ -204,16 +200,16 @@ class CogitoToolAdapter(BaseChatModel):
         
         return original_response
         
-    def invoke(self, input, config=None, **kwargs):
+    def invoke(self, messages, **kwargs):
         """调用模型并处理响应，将文本描述的工具调用转换为实际工具调用"""
-        response = self.llm.invoke(input, config, **kwargs)
+        response = self.model.invoke(messages, **kwargs)
         
         # 检查是否已有工具调用
         if hasattr(response, 'tool_calls') and response.tool_calls:
             return response
             
         # 提取文本中描述的工具调用
-        content = response.content if hasattr(response, 'content') else ""
+        content = response.content
         tool_calls = self._extract_tool_calls(content)
         
         # 如果找到工具调用，修改响应
@@ -230,16 +226,16 @@ class CogitoToolAdapter(BaseChatModel):
         
         return response
     
-    async def ainvoke(self, input, config=None, **kwargs):
+    async def ainvoke(self, messages, **kwargs):
         """异步调用模型并处理响应，将文本描述的工具调用转换为实际工具调用"""
-        response = await self.llm.ainvoke(input, config, **kwargs)
+        response = await self.model.ainvoke(messages, **kwargs)
         
         # 检查是否已有工具调用
         if hasattr(response, 'tool_calls') and response.tool_calls:
             return response
             
         # 提取文本中描述的工具调用
-        content = response.content if hasattr(response, 'content') else ""
+        content = response.content
         tool_calls = self._extract_tool_calls(content)
         
         # 如果找到工具调用，修改响应
