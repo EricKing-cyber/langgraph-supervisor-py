@@ -83,19 +83,39 @@ class SpecialtyResearchAgent(ResearchAgent):
                 # 将异步函数包装为工具
                 @tool
                 async def google_search(search_queries: List[str]):
-                    """使用Google搜索引擎进行搜索"""
-                    results = await google_search_async(search_queries)
-                    return results
+                    """使用Google搜索引擎进行搜索
+                    
+                    Args:
+                        search_queries: 搜索查询列表，每个查询是一个字符串
+                    """
+                    try:
+                        results = await google_search_async(search_queries)
+                        return results
+                    except Exception as e:
+                        return f"Google搜索出错: {str(e)}\n请尝试其他搜索方式或简化搜索查询。"
                 
                 search_tool = google_search
                 tool_added = True
             elif api_name.lower() == "arxiv":
-                # 将异步函数包装为工具
+                # 将异步函数包装为工具，确保参数格式正确
                 @tool
                 async def arxiv_search(search_queries: List[str]):
-                    """在arXiv上搜索学术论文"""
-                    results = await arxiv_search_async(search_queries)
-                    return results
+                    """在arXiv上搜索学术论文
+                    
+                    Args:
+                        search_queries: 搜索查询列表，每个查询是一个字符串，如 ["quantum computing", "neural networks"]
+                    """
+                    try:
+                        # 对于arxiv搜索，我们需要确保参数格式正确
+                        # 通常load_max_docs参数控制每个查询返回的最大文档数
+                        results = await arxiv_search_async(
+                            search_queries, 
+                            load_max_docs=5,
+                            get_full_documents=False  # 不获取完整文档，只获取摘要，以减少负载
+                        )
+                        return results
+                    except Exception as e:
+                        return f"arXiv搜索出错: {str(e)}\n请尝试其他搜索方式或使用更具体的学术关键词。"
                 
                 search_tool = arxiv_search
                 tool_added = True
@@ -103,9 +123,19 @@ class SpecialtyResearchAgent(ResearchAgent):
                 # 将异步函数包装为工具
                 @tool
                 async def pubmed_search(search_queries: List[str]):
-                    """在PubMed上搜索医学文献"""
-                    results = await pubmed_search_async(search_queries)
-                    return results
+                    """在PubMed上搜索医学文献
+                    
+                    Args:
+                        search_queries: 医学相关搜索查询列表
+                    """
+                    try:
+                        results = await pubmed_search_async(
+                            search_queries,
+                            top_k_results=5  # 限制每个查询返回的结果数
+                        )
+                        return results
+                    except Exception as e:
+                        return f"PubMed搜索出错: {str(e)}\n请尝试使用更具体的医学关键词或其他搜索方式。"
                 
                 search_tool = pubmed_search
                 tool_added = True
@@ -113,9 +143,19 @@ class SpecialtyResearchAgent(ResearchAgent):
                 # 将异步函数包装为工具
                 @tool
                 async def linkup_web_search(search_queries: List[str]):
-                    """使用LinkUp搜索引擎进行搜索"""
-                    results = await linkup_search(search_queries)
-                    return results
+                    """使用LinkUp搜索引擎进行搜索
+                    
+                    Args:
+                        search_queries: 搜索查询列表
+                    """
+                    try:
+                        results = await linkup_search(
+                            search_queries,
+                            depth="standard"  # 使用标准深度，避免过度请求
+                        )
+                        return results
+                    except Exception as e:
+                        return f"LinkUp搜索出错: {str(e)}\n请尝试其他搜索方式或简化搜索查询。"
                 
                 search_tool = linkup_web_search
                 tool_added = True
@@ -154,7 +194,8 @@ class SpecialtyResearchAgent(ResearchAgent):
 1. 搜索工具: 你必须使用搜索工具来获取最新信息，这是必须的第一步！
 {search_tools_desc}   - 每个研究任务必须执行至少1-2次搜索查询
    - 确保你的搜索查询相关且精确
-   - 查询格式示例: ["大语言模型最新技术发展", "GPT-4技术架构分析"]
+   - 查询格式示例: ["远程工作效率研究", "远程工作对员工心理健康的影响"]
+   - 搜索查询应简单明确，避免过长或复杂的查询
 
 2. Section工具: 完成研究后必须使用Section工具提交结果
    - name: 章节标题
@@ -170,7 +211,7 @@ class SpecialtyResearchAgent(ResearchAgent):
    - 在完成Section提交后必须调用此工具
 
 完整工作流示例:
-1. 收到研究任务: "研究大语言模型最新进展"
+1. 收到研究任务: "研究远程工作模式对企业生产力的影响"
 2. 执行搜索: 使用搜索工具查询相关信息
 3. 分析搜索结果
 4. 撰写研究内容: 使用Section工具提交
@@ -183,7 +224,7 @@ class SpecialtyResearchAgent(ResearchAgent):
 
 class MultiSourceResearchAgent(SpecialtyResearchAgent):
     """多搜索源研究代理"""
-    def __init__(self, model: LanguageModelLike, specialty: str, search_apis: List[str] = ["tavily", "google", "arxiv"]):
+    def __init__(self, model: LanguageModelLike, specialty: str, search_apis: List[str] = ["tavily", "google"]):
         """
         初始化多搜索源研究代理
         
@@ -192,8 +233,23 @@ class MultiSourceResearchAgent(SpecialtyResearchAgent):
             specialty: 专业领域
             search_apis: 搜索API列表
         """
+        # 安全检查：确保搜索API列表不包含可能导致问题的组合
+        safe_apis = []
+        for api in search_apis:
+            if api.lower() in ["tavily", "duckduckgo", "google"]:
+                safe_apis.append(api)
+            # 仅在特定领域使用专业搜索API
+            elif api.lower() == "arxiv" and specialty in ["science", "ai_technology", "climate"]:
+                safe_apis.append(api)
+            elif api.lower() == "pubmed" and specialty in ["medical", "science"]:
+                safe_apis.append(api)
+                
+        # 确保至少有一个搜索API
+        if not safe_apis:
+            safe_apis = ["tavily"]  # 默认使用tavily
+            
         # 调用父类初始化，但传递搜索API列表
-        super().__init__(model, specialty, search_apis)
+        super().__init__(model, specialty, safe_apis)
         
         # 增强提示词，强调多搜索源使用策略
         self.prompt += """
@@ -201,11 +257,11 @@ class MultiSourceResearchAgent(SpecialtyResearchAgent):
 【多搜索源使用策略】
 你拥有多个搜索工具，应当根据不同情况选择最合适的工具:
 
-1. 对于学术/科学问题，优先使用arxiv_search
-2. 对于医学问题，优先使用pubmed_search
+1. 对于学术/科学问题，优先使用tavily_search或google_search
+2. 对于一般性问题，优先使用tavily_search或duckduckgo_search
 3. 对于最新新闻和事件，优先使用google_search或tavily_search
-4. 对于复杂问题，考虑使用多个搜索工具对比结果
-5. 当一个搜索工具未返回满意结果时，尝试使用其他搜索工具
+4. 当一个搜索工具未返回满意结果时，尝试使用其他搜索工具
+5. 如果所有搜索工具都返回错误，尝试简化搜索查询或拆分为多个简单查询
 
 确保在报告中注明每个信息的来源和搜索工具。
 """

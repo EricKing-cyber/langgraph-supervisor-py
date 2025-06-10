@@ -65,9 +65,9 @@ def create_model(model_name: str = None):
     # 默认模型
     #=================================
     else:
-        # 默认使用 qwen3:8b 模型并应用工具调用适配器
+        # 默认使用 cogito:8b 模型并应用工具调用适配器
         model = ChatOllama(
-            model="qwen3:8b",
+            model="cogito:8b",
             temperature=0.1,
             format="json",  # 启用JSON格式 
             tool_system_prompt="使用工具时必须使用JSON格式，format={'name': 'tool_name', 'arguments': {}}。工具调用必须使用JSON格式，不能用文本描述。"
@@ -81,9 +81,8 @@ class CogitoToolAdapter(BaseChatModel):
     llm: ChatOllama = Field(description="底层语言模型")
     tools_list: List[BaseTool] = Field(default_factory=list, description="绑定的工具列表")
     tool_names_dict: Dict[str, BaseTool] = Field(default_factory=dict, description="工具名称映射")
-    tool_pattern: Any = Field(default=None, description="工具调用模式匹配")
     
-    def __init__(self, llm: ChatOllama, **kwargs):
+    def __init__(self, llm: ChatOllama):
         """初始化适配器
         
         Args:
@@ -92,7 +91,7 @@ class CogitoToolAdapter(BaseChatModel):
         # 编译正则表达式用于匹配描述中的工具调用
         tool_pattern = re.compile(r"调用(?:工具)?[\s]*(transfer_to_\w+)[\s]*(?:工具)?")
         # 调用父类初始化
-        super().__init__(llm=llm, tool_pattern=tool_pattern, **kwargs)
+        super().__init__(llm=llm, tool_pattern=tool_pattern)
         
     @property
     def _llm_type(self) -> str:
@@ -204,16 +203,16 @@ class CogitoToolAdapter(BaseChatModel):
         
         return original_response
         
-    def invoke(self, input, config=None, **kwargs):
+    def invoke(self, messages, **kwargs):
         """调用模型并处理响应，将文本描述的工具调用转换为实际工具调用"""
-        response = self.llm.invoke(input, config, **kwargs)
+        response = self.llm.invoke(messages, **kwargs)
         
         # 检查是否已有工具调用
         if hasattr(response, 'tool_calls') and response.tool_calls:
             return response
             
         # 提取文本中描述的工具调用
-        content = response.content if hasattr(response, 'content') else ""
+        content = response.content
         tool_calls = self._extract_tool_calls(content)
         
         # 如果找到工具调用，修改响应
@@ -230,16 +229,16 @@ class CogitoToolAdapter(BaseChatModel):
         
         return response
     
-    async def ainvoke(self, input, config=None, **kwargs):
+    async def ainvoke(self, messages, **kwargs):
         """异步调用模型并处理响应，将文本描述的工具调用转换为实际工具调用"""
-        response = await self.llm.ainvoke(input, config, **kwargs)
+        response = await self.llm.ainvoke(messages, **kwargs)
         
         # 检查是否已有工具调用
         if hasattr(response, 'tool_calls') and response.tool_calls:
             return response
             
         # 提取文本中描述的工具调用
-        content = response.content if hasattr(response, 'content') else ""
+        content = response.content
         tool_calls = self._extract_tool_calls(content)
         
         # 如果找到工具调用，修改响应

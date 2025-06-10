@@ -77,6 +77,59 @@ def build_deep_research_workflow(research_agents: list, model: LanguageModelLike
     # 获取主管工具
     supervisor_tools = get_supervisor_tools()
     
+    # 记录激活的研究代理名称，用于提示词动态生成
+    active_agent_names = [agent.name if hasattr(agent, 'name') else f"agent_{i}" 
+                          for i, agent in enumerate(research_agents)]
+    
+    # 仅生成激活的研究代理提示
+    def get_agent_description(agent_name):
+        """根据代理名称获取其描述"""
+        descriptions = {
+            "ai_technology_researcher": """1. ai_technology_researcher - AI技术研究专家，调用方式：使用transfer_to_ai_technology_researcher工具
+       - 擅长领域：人工智能、机器学习、深度学习、大语言模型、计算机视觉、语音识别等
+       - 适用任务：AI技术趋势分析、算法研究、技术应用分析等""",
+            
+            "finance_researcher": """2. finance_researcher - 金融领域研究专家，调用方式：使用transfer_to_finance_researcher工具
+       - 擅长领域：经济学、金融市场、投资分析、风险管理、金融科技、加密货币等
+       - 适用任务：市场趋势分析、投资策略研究、经济政策影响分析等""",
+            
+            "science_researcher": """3. science_researcher - 科学领域研究专家，调用方式：使用transfer_to_science_researcher工具
+       - 擅长领域：物理学、化学、生物学、环境科学、医学、天文学等
+       - 适用任务：科学前沿研究分析、技术可行性研究、科学文献综述等""",
+            
+            "legal_researcher": """4. legal_researcher - 法律领域研究专家，调用方式：使用transfer_to_legal_researcher工具
+       - 擅长领域：法律条文检索、案例分析、合规性审查、合同条款审查等
+       - 适用任务：法律风险评估、司法判决预测、法规解读分析等""",
+            
+            "medical_researcher": """5. medical_researcher - 医疗健康研究专家，调用方式：使用transfer_to_medical_researcher工具
+       - 擅长领域：医学文献检索、临床试验分析、药物研发、疾病诊断辅助等
+       - 适用任务：新药研发趋势分析、医疗政策研究、疾病治疗方案比较等""",
+            
+            "engineering_researcher": """6. engineering_researcher - 工程技术研究专家，调用方式：使用transfer_to_engineering_researcher工具
+       - 擅长领域：技术标准查询、专利分析、工程方案优化、建筑设计优化等
+       - 适用任务：机械故障诊断、材料科学创新、工程效率分析等""",
+            
+            "socialscience_researcher": """7. socialscience_researcher - 社会科学研究专家，调用方式：使用transfer_to_socialscience_researcher工具
+       - 擅长领域：社会调查数据分析、政策影响评估、市场调研报告等
+       - 适用任务：公共政策效果分析、行为经济学研究、消费趋势分析等""",
+            
+            "climate_researcher": """8. climate_researcher - 气候科学研究专家，调用方式：使用transfer_to_climate_researcher工具
+       - 擅长领域：气候模型分析、环境数据挖掘、气候变化预测等
+       - 适用任务：碳排放政策制定、可持续发展研究、生态环境保护分析等"""
+        }
+        
+        return descriptions.get(agent_name, f"{agent_name} - 专业研究代理")
+    
+    # 动态生成团队成员描述
+    active_agent_descriptions = []
+    for agent_name in active_agent_names:
+        agent_desc = get_agent_description(agent_name)
+        if agent_desc:
+            active_agent_descriptions.append(agent_desc)
+    
+    # 组合所有激活的代理描述
+    team_members_description = "\n\n".join(active_agent_descriptions)
+    
     # 创建增强的提示词，明确指导研究主管如何分配任务给不同领域的研究员
     enhanced_supervisor_prompt = f"""
     你是一个深度研究团队的主管，负责管理多个领域的研究专家。你的职责是协调研究工作、分配任务、评估研究进度并整合最终报告。
@@ -84,37 +137,7 @@ def build_deep_research_workflow(research_agents: list, model: LanguageModelLike
     【警告】你不能自己直接生成研究内容！你必须将具体研究工作分配给团队中的专业研究员执行。
 
     你的团队成员包括:
-    1. ai_technology_researcher - AI技术研究专家，调用方式：使用transfer_to_ai_technology_researcher工具
-       - 擅长领域：人工智能、机器学习、深度学习、大语言模型、计算机视觉、语音识别等
-       - 适用任务：AI技术趋势分析、算法研究、技术应用分析等
-
-    2. finance_researcher - 金融领域研究专家，调用方式：使用transfer_to_finance_researcher工具
-       - 擅长领域：经济学、金融市场、投资分析、风险管理、金融科技、加密货币等
-       - 适用任务：市场趋势分析、投资策略研究、经济政策影响分析等
-
-    3. science_researcher - 科学领域研究专家，调用方式：使用transfer_to_science_researcher工具
-       - 擅长领域：物理学、化学、生物学、环境科学、医学、天文学等
-       - 适用任务：科学前沿研究分析、技术可行性研究、科学文献综述等
-       
-    4. legal_researcher - 法律领域研究专家，调用方式：使用transfer_to_legal_researcher工具
-       - 擅长领域：法律条文检索、案例分析、合规性审查、合同条款审查等
-       - 适用任务：法律风险评估、司法判决预测、法规解读分析等
-       
-    5. medical_researcher - 医疗健康研究专家，调用方式：使用transfer_to_medical_researcher工具
-       - 擅长领域：医学文献检索、临床试验分析、药物研发、疾病诊断辅助等
-       - 适用任务：新药研发趋势分析、医疗政策研究、疾病治疗方案比较等
-       
-    6. engineering_researcher - 工程技术研究专家，调用方式：使用transfer_to_engineering_researcher工具
-       - 擅长领域：技术标准查询、专利分析、工程方案优化、建筑设计优化等
-       - 适用任务：机械故障诊断、材料科学创新、工程效率分析等
-       
-    7. socialscience_researcher - 社会科学研究专家，调用方式：使用transfer_to_socialscience_researcher工具
-       - 擅长领域：社会调查数据分析、政策影响评估、市场调研报告等
-       - 适用任务：公共政策效果分析、行为经济学研究、消费趋势分析等
-       
-    8. climate_researcher - 气候科学研究专家，调用方式：使用transfer_to_climate_researcher工具
-       - 擅长领域：气候模型分析、环境数据挖掘、气候变化预测等
-       - 适用任务：碳排放政策制定、可持续发展研究、生态环境保护分析等
+    {team_members_description}
 
     必须遵循的工作流程:
     1. 当接收到用户请求时，先使用Sections工具规划研究报告的整体结构和章节
@@ -154,6 +177,7 @@ def build_deep_research_workflow(research_agents: list, model: LanguageModelLike
     """
     
     # 使用create_supervisor构建工作流图
+    print(f"创建深度研究工作流，包含 {len(research_agents)} 个活跃的研究代理")
     graph = create_supervisor(
         agents=research_agents,
         model=model,

@@ -1,10 +1,11 @@
 from langchain_openai import ChatOpenAI
 from pydantic import SecretStr, Field
 from multi_agent_system.model_config import ModelConfig
-from langchain_core.language_models import BaseChatModel
+from langchain_core.language_models import BaseChatModel, LanguageModelLike
 from langchain_core.tools import BaseTool
 from langchain_anthropic import ChatAnthropic
 from langchain_community.chat_models.ollama import ChatOllama
+from langchain_groq import ChatGroq
 from typing import List, Dict, Any, Optional, Union, Callable
 import re
 import os
@@ -12,67 +13,81 @@ from langchain_core.messages import BaseMessage
 from langchain_core.callbacks import CallbackManagerForLLMRun
 import json
 
-def create_model(model_name: str = None):
-    """创建语言模型实例，支持多种模型类型并提供工具调用适配"""
-    #=================================
-    # Cogito模型（使用适配器支持工具调用）
-    #=================================
-    if model_name and model_name.startswith("cogito:"):
-        model = ChatOllama(
-            model=model_name,
-            temperature=0.1,
-            format="json",  # 启用JSON格式
-            tool_system_prompt="使用工具时必须使用JSON格式，format={'name': 'tool_name', 'arguments': {}}。工具调用必须使用JSON格式，不能用文本描述。"
-        )
-        return CogitoToolAdapter(llm=model)  # 使用适配器包装
+# 全局模型缓存，避免重复创建相同模型
+_MODEL_CACHE = {}
+
+def create_model(model_name: str = None, **kwargs) -> LanguageModelLike:
+    """
+    根据模型名称创建模型实例
     
-    #=================================
-    # OpenAI模型
-    #=================================
-    elif model_name == "gpt-4.1-2025-04-14" or model_name == "qwen3-32b":
-        if not ModelConfig.OPENAI_API_KEY:
-            raise ValueError("OPENAI_API_KEY must be set in the environment variables.")
-            
-        return ChatOpenAI(
-            model=model_name,
-            base_url=ModelConfig.OPENAI_BASE_URL,
-            api_key=SecretStr(ModelConfig.OPENAI_API_KEY)
-        )
+    Args:
+        model_name: 模型名称，格式为 "提供商:模型名称"，如 "openai:gpt-4"
+        **kwargs: 传递给模型构造函数的其他参数
     
-    #=================================
-    # 本地模型（使用OpenAI兼容接口）
-    #=================================
-    elif model_name in ["qwen3:8b", "granite3.3:8b"]:
-        return ChatOpenAI(
-            model=model_name,
-            base_url=ModelConfig.LOCAL_MODEL_URL,
-            api_key=SecretStr("no-need")
-        )
+    Returns:
+        创建的模型实例
+    """
+    # 使用默认模型
+    if model_name is None or model_name == "default_model":
+        # 环境变量中有默认模型则使用环境变量
+        env_model = os.environ.get("DEFAULT_MODEL")
+        if env_model:
+            model_name = env_model
+        else:
+            # 默认使用 OpenAI 的 gpt-3.5-turbo
+            model_name = "openai:gpt-3.5-turbo"
     
-    #=================================
-    # Anthropic模型
-    #=================================
-    elif model_name and (model_name.startswith("claude-3") or model_name.startswith("claude:")):
-        api_key = os.environ.get('ANTHROPIC_API_KEY', 'your_api_key')
-        model = ChatAnthropic(
-            temperature=0,
-            model_name=model_name,
-            anthropic_api_key=api_key,
-        )
-        return model
+    # 构建缓存键 - 包含模型名称和所有关键参数
+    cache_key = model_name
+    for k, v in sorted(kwargs.items()):
+        cache_key += f"_{k}:{v}"
+        
+    # 检查模型是否已存在于缓存中
+    if cache_key in _MODEL_CACHE:
+        print(f"使用缓存的模型实例: {cache_key}")
+        return _MODEL_CACHE[cache_key]
     
-    #=================================
-    # 默认模型
-    #=================================
+    # 解析模型提供商和模型名称
+    parts = model_name.split(":", 1)
+    if len(parts) == 2:
+        provider, model = parts
     else:
-        # 默认使用 qwen3:8b 模型并应用工具调用适配器
-        model = ChatOllama(
-            model="qwen3:8b",
-            temperature=0.1,
-            format="json",  # 启用JSON格式 
-            tool_system_prompt="使用工具时必须使用JSON格式，format={'name': 'tool_name', 'arguments': {}}。工具调用必须使用JSON格式，不能用文本描述。"
-        )
-        return CogitoToolAdapter(llm=model)
+        # 如果没有提供商前缀，默认为 OpenAI
+        provider = "openai"
+        model = model_name
+    
+    # 根据提供商创建对应的模型
+    try:
+        if provider.lower() == "openai":
+            model_instance = ChatOpenAI(model=model, **kwargs)
+        elif provider.lower() == "anthropic":
+            model_instance = ChatAnthropic(model=model, **kwargs)
+        elif provider.lower() == "groq":
+            model_instance = ChatGroq(model=model, **kwargs)
+        elif provider.lower() in ["qwen", "qwen3"]:
+            # 使用Ollama的Qwen模型
+            from langchain_community.chat_models import ChatOllama
+            # 为Ollama模型添加默认参数，减少并发负载
+            ollama_kwargs = {
+                "num_ctx": 4096,  # 减小上下文窗口
+                "timeout": 120,   # 增加超时时间
+                "temperature": 0.7,
+            }
+            # 用户提供的参数会覆盖默认参数
+            ollama_kwargs.update(kwargs)
+            model_instance = ChatOllama(model=model, **ollama_kwargs)
+        else:
+            # 不支持的提供商，尝试使用OpenAI
+            print(f"不支持的模型提供商: {provider}，使用OpenAI作为备选")
+            model_instance = ChatOpenAI(model="gpt-3.5-turbo", **kwargs)
+    except Exception as e:
+        # 如果模型创建失败，回退到Tavily的T5模型
+        print(f"模型 {model_name} 创建失败: {str(e)}，使用OpenAI作为备选")
+        model_instance = ChatOpenAI(model="gpt-3.5-turbo", **kwargs)
+    
+    # 将模型实例保存到缓存
+    _MODEL_CACHE[cache_key] = model_instance
+    return model_instance
 
 class CogitoToolAdapter(BaseChatModel):
     """Cogito模型的工具调用适配器，处理文本描述的工具调用"""

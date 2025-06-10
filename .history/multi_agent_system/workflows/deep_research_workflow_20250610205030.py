@@ -95,26 +95,6 @@ def build_deep_research_workflow(research_agents: list, model: LanguageModelLike
     3. science_researcher - 科学领域研究专家，调用方式：使用transfer_to_science_researcher工具
        - 擅长领域：物理学、化学、生物学、环境科学、医学、天文学等
        - 适用任务：科学前沿研究分析、技术可行性研究、科学文献综述等
-       
-    4. legal_researcher - 法律领域研究专家，调用方式：使用transfer_to_legal_researcher工具
-       - 擅长领域：法律条文检索、案例分析、合规性审查、合同条款审查等
-       - 适用任务：法律风险评估、司法判决预测、法规解读分析等
-       
-    5. medical_researcher - 医疗健康研究专家，调用方式：使用transfer_to_medical_researcher工具
-       - 擅长领域：医学文献检索、临床试验分析、药物研发、疾病诊断辅助等
-       - 适用任务：新药研发趋势分析、医疗政策研究、疾病治疗方案比较等
-       
-    6. engineering_researcher - 工程技术研究专家，调用方式：使用transfer_to_engineering_researcher工具
-       - 擅长领域：技术标准查询、专利分析、工程方案优化、建筑设计优化等
-       - 适用任务：机械故障诊断、材料科学创新、工程效率分析等
-       
-    7. socialscience_researcher - 社会科学研究专家，调用方式：使用transfer_to_socialscience_researcher工具
-       - 擅长领域：社会调查数据分析、政策影响评估、市场调研报告等
-       - 适用任务：公共政策效果分析、行为经济学研究、消费趋势分析等
-       
-    8. climate_researcher - 气候科学研究专家，调用方式：使用transfer_to_climate_researcher工具
-       - 擅长领域：气候模型分析、环境数据挖掘、气候变化预测等
-       - 适用任务：碳排放政策制定、可持续发展研究、生态环境保护分析等
 
     必须遵循的工作流程:
     1. 当接收到用户请求时，先使用Sections工具规划研究报告的整体结构和章节
@@ -134,12 +114,6 @@ def build_deep_research_workflow(research_agents: list, model: LanguageModelLike
     - 在同一会话中，如果你已经做过章节规划，并且刚刚从top_supervisor收到请求，直接继续上次未完成的流程，不要重新开始规划
     - 当你已经收到来自研究员的成果后，直接整合，不要再将同一任务重新分配给他们
     - 如果你注意到有循环调用的迹象，请直接继续完成报告而不是重新分配任务
-
-    任务分配最佳实践:
-    - 根据章节内容的专业性质，分配给最合适的研究员
-    - 确保每个章节都能获得专业且深入的研究支持
-    - 一个章节只分配给一个研究员，避免工作重复
-    - 复杂的跨领域主题可以拆分为多个子章节，分别分配给不同专业的研究员
 
     举例:
     用户:"请研究大语言模型的最新进展"
@@ -162,12 +136,12 @@ def build_deep_research_workflow(research_agents: list, model: LanguageModelLike
     )
     
     # 为图的invoke和ainvoke方法添加配置注入装饰器
-    original_invoke = (graph.compile()).invoke
-    original_ainvoke = (graph.compile()).ainvoke
+    original_invoke = graph.invoke
+    original_ainvoke = graph.ainvoke
     
-    (graph.compile()).invoke = with_config_injection(original_invoke)
-    (graph.compile()).ainvoke = with_config_injection(original_ainvoke)
-
+    graph.invoke = with_config_injection(original_invoke)
+    graph.ainvoke = with_config_injection(original_ainvoke)
+    
     return graph
 
 __all__ = ["build_deep_research_workflow"] 

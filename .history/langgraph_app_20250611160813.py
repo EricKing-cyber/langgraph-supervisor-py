@@ -22,22 +22,22 @@ deep_research_config = create_research_config(
     process_search_results="summarize"  # 处理搜索结果的方式
 )
 
-# 创建原有深度研究代理
+# 创建原有深度研究代理 - 全部使用tavily搜索，确保稳定性
 ai_research_agent = create_research_agent("ai_technology", "qwen3:8b", search_api="tavily")
 finance_research_agent = create_research_agent("finance", "qwen3:8b", search_api="tavily")
 science_research_agent = create_research_agent("science", "qwen3:8b", search_api="tavily")
 
-# 创建新的专业研究代理，分配最合适的搜索工具
-legal_research_agent = create_legal_research_agent("qwen3:8b", search_api="google")
-medical_research_agent = create_medical_research_agent("qwen3:8b", search_api="pubmed")
-engineering_research_agent = create_engineering_research_agent("qwen3:8b", search_api="google")
+# 创建新的专业研究代理，使用最安全的搜索工具组合
+legal_research_agent = create_legal_research_agent("qwen3:8b", search_api="tavily")  # 改为tavily而不是google
+medical_research_agent = create_medical_research_agent("qwen3:8b", search_api="tavily")  # 改为tavily而不是pubmed
+engineering_research_agent = create_engineering_research_agent("qwen3:8b", search_api="tavily")  # 改为tavily而不是google
 socialscience_research_agent = create_socialscience_research_agent("qwen3:8b", search_api="tavily")
 
-# 创建气候研究代理，使用多搜索源配置 (arxiv + google)
+# 创建气候研究代理，使用多搜索源配置但只使用稳定的搜索源
 climate_research_agent = create_multisource_research_agent(
     "climate", 
     "qwen3:8b", 
-    search_apis=["arxiv", "google"]
+    search_apis=["tavily", "duckduckgo"]  # 只使用最稳定的搜索API组合
 )
 
 # 构建中间层监督者图（StateGraph）
