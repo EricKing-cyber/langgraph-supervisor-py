@@ -1,4 +1,8 @@
 from langgraph_supervisor.supervisor import create_supervisor,create_top_level_supervisor
+from langgraph.graph import StateGraph, START, END
+from langgraph.state import get_messages
+from langchain_core.messages import AIMessage
+import re
 
 
 def build_supervisor_workflow(agents, model):
@@ -8,6 +12,51 @@ def build_supervisor_workflow(agents, model):
         model=model,
         prompt="你是一个团队监督者，管理研究与写作专家，数学专家和天气专家。对于代数问题，使用algebra_expert；对于微积分问题，使用calculus_expert。",
     )
+
+# 添加一个消息拦截器函数，用于拦截监督者输出并添加工具调用
+def message_interceptor(state):
+    """拦截最后一条消息，检查是否包含工具调用描述，如果包含则添加工具调用"""
+    messages = get_messages(state)
+    if not messages or len(messages) == 0:
+        return state
+    
+    last_message = messages[-1]
+    if last_message.type != "ai" or last_message.name != "top_supervisor":
+        return state
+    
+    # 检查是否包含工具调用描述
+    content = last_message.content
+    if not content:
+        return state
+    
+    # 使用正则表达式寻找工具调用描述
+    transfer_match = re.search(r"调用(?:工具)?\s*(transfer_to_(\w+)(?:_team)?)\s*(?:工具)?", content)
+    if transfer_match:
+        tool_name = transfer_match.group(1)
+        # 设置工具调用
+        tool_calls = [
+            {
+                'id': f'intercept_call_{0}',
+                'name': tool_name,
+                'args': {},
+                'type': 'function'
+            }
+        ]
+        
+        # 使用这些信息创建一个新的带工具调用的消息
+        updated_message = AIMessage(
+            content="",  # 清空内容，让工具调用更明显
+            name=last_message.name,
+            tool_calls=tool_calls  # 添加工具调用
+        )
+        
+        # 替换最后一条消息
+        messages[-1] = updated_message
+        
+        # 更新状态
+        return {"messages": messages}
+    
+    return state
 
 def build_top_level_supervisor(middle_supervisors, model):
     """
@@ -87,12 +136,38 @@ def build_top_level_supervisor(middle_supervisors, model):
        你应该执行: {"name": "transfer_to_deep_research_team", "arguments": {}}
     """
     
-    return create_top_level_supervisor(
+    # 创建顶层监督者
+    supervisor_base = create_top_level_supervisor(
         middle_supervisors=[sg for sg, name in middle_supervisors],
         model=model,
         agent_names=[name for sg, name in middle_supervisors],
         prompt=top_supervisor_prompt
     )
+    
+    # 创建最终的状态图，添加消息拦截节点
+    builder = StateGraph(supervisor_base.schema, config_schema=supervisor_base.config_schema)
+    
+    # 添加主监督者节点 
+    supervisor_compiled = supervisor_base.compile()
+    builder.add_node("main_supervisor", supervisor_compiled)
+    
+    # 添加消息拦截节点
+    builder.add_node("interceptor", message_interceptor)
+    
+    # 添加其他节点：子团队supervisors
+    for sg, name in middle_supervisors:
+        builder.add_node(name, sg)
+    
+    # 添加边缘
+    builder.add_edge(START, "main_supervisor")
+    builder.add_edge("main_supervisor", "interceptor")
+    builder.add_edge("interceptor", END)
+    
+    # 添加子团队到主管的边缘
+    for _, name in middle_supervisors:
+        builder.add_edge(name, "interceptor")
+    
+    return builder
 
 
 __all__ = ["build_supervisor_workflow",

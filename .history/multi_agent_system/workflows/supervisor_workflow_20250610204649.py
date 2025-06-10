@@ -55,13 +55,9 @@ def build_top_level_supervisor(middle_supervisors, model):
     4. 任务转交后，等待该团队完全处理后再进行下一步决策
     
     【调用团队的方式】
-    - 对于math_team：必须使用工具 transfer_to_math_team 
-    - 对于weather_team：必须使用工具 transfer_to_weather_team
-    - 对于deep_research_team：必须使用工具 transfer_to_deep_research_team
-    
-    【工具调用格式示例】
-    假设你要将请求发送到深度研究团队，必须使用JSON格式的工具调用，如下所示:
-    {"name": "transfer_to_deep_research_team", "arguments": {}}
+    - 对于math_team：调用工具 transfer_to_math_team 
+    - 对于weather_team：调用工具 transfer_to_weather_team
+    - 对于deep_research_team：调用工具 transfer_to_deep_research_team
     
     【避免重复调用】
     每个查询只应该调用一次团队。如果一个团队已经处理过查询并返回结果，你应该：
@@ -72,19 +68,14 @@ def build_top_level_supervisor(middle_supervisors, model):
     
     【防止递归循环示例】
     如果用户请求"研究大语言模型的发展趋势"：
-    - 你应该使用工具调用：{"name": "transfer_to_deep_research_team", "arguments": {}}
+    - 你应该调用transfer_to_deep_research_team工具
     - 当deep_research_team返回结果后，不要再次调用transfer_to_deep_research_team工具
     - 而是直接将结果返回给用户，或者进行必要的补充
     
     【成功响应示例】
-    1. 用户:"求解方程x²+3x-4=0"
-       你应该执行: {"name": "transfer_to_math_team", "arguments": {}}
-    
-    2. 用户:"北京今天的天气如何？"
-       你应该执行: {"name": "transfer_to_weather_team", "arguments": {}}
-    
-    3. 用户:"请对量子计算进行研究分析"
-       你应该执行: {"name": "transfer_to_deep_research_team", "arguments": {}}
+    - 用户:"求解方程x²+3x-4=0" → 调用transfer_to_math_team工具
+    - 用户:"北京今天的天气如何？" → 调用transfer_to_weather_team工具
+    - 用户:"请对量子计算进行研究分析" → 调用transfer_to_deep_research_team工具
     """
     
     return create_top_level_supervisor(

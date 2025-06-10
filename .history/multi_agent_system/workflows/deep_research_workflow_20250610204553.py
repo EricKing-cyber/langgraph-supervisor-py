@@ -136,8 +136,8 @@ def build_deep_research_workflow(research_agents: list, model: LanguageModelLike
     )
     
     # 为图的invoke和ainvoke方法添加配置注入装饰器
-    original_invoke = (graph.compile()).invoke
-    original_ainvoke = (graph.compile()).ainvoke
+    original_invoke = graph.invoke
+    original_ainvoke = graph.ainvoke
     
     graph.invoke = with_config_injection(original_invoke)
     graph.ainvoke = with_config_injection(original_ainvoke)
