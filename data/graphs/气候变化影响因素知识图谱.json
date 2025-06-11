@@ -1,0 +1,160 @@
+{
+  "nodes": [
+    {
+      "id": "climate_change",
+      "name": "气候变化"
+    },
+    {
+      "id": "ghg_emission",
+      "name": "温室气体排放"
+    },
+    {
+      "id": "energy_use",
+      "name": "能源结构"
+    },
+    {
+      "id": "land_use",
+      "name": "土地利用变化"
+    },
+    {
+      "id": "socioeconomic",
+      "name": "社会经济活动"
+    },
+    {
+      "id": "natural_factors",
+      "name": "自然因素"
+    },
+    {
+      "id": "industrial",
+      "name": "工业"
+    },
+    {
+      "id": "transport",
+      "name": "交通运输"
+    },
+    {
+      "id": "consumption",
+      "name": "消费模式"
+    },
+    {
+      "id": "renewable",
+      "name": "可再生能源"
+    },
+    {
+      "id": "fossil",
+      "name": "化石能源"
+    },
+    {
+      "id": "deforestation",
+      "name": "森林砍伐"
+    },
+    {
+      "id": "urbanization",
+      "name": "城市化"
+    },
+    {
+      "id": "agriculture",
+      "name": "农业扩张"
+    },
+    {
+      "id": "solar",
+      "name": "太阳辐射"
+    },
+    {
+      "id": "volcanic",
+      "name": "火山活动"
+    },
+    {
+      "id": "ocean_currents",
+      "name": "海洋环流"
+    }
+  ],
+  "edges": [
+    {
+      "source": "ghg_emission",
+      "target": "climate_change",
+      "type": "推动"
+    },
+    {
+      "source": "energy_use",
+      "target": "ghg_emission",
+      "type": "影响"
+    },
+    {
+      "source": "land_use",
+      "target": "ghg_emission",
+      "type": "影响"
+    },
+    {
+      "source": "socioeconomic",
+      "target": "energy_use",
+      "type": "驱动"
+    },
+    {
+      "source": "socioeconomic",
+      "target": "land_use",
+      "type": "驱动"
+    },
+    {
+      "source": "natural_factors",
+      "target": "climate_change",
+      "type": "影响"
+    },
+    {
+      "source": "industrial",
+      "target": "socioeconomic",
+      "type": "构成"
+    },
+    {
+      "source": "transport",
+      "target": "socioeconomic",
+      "type": "构成"
+    },
+    {
+      "source": "consumption",
+      "target": "socioeconomic",
+      "type": "构成"
+    },
+    {
+      "source": "renewable",
+      "target": "energy_use",
+      "type": "结构部分"
+    },
+    {
+      "source": "fossil",
+      "target": "energy_use",
+      "type": "结构部分"
+    },
+    {
+      "source": "deforestation",
+      "target": "land_use",
+      "type": "方式"
+    },
+    {
+      "source": "urbanization",
+      "target": "land_use",
+      "type": "方式"
+    },
+    {
+      "source": "agriculture",
+      "target": "land_use",
+      "type": "方式"
+    },
+    {
+      "source": "solar",
+      "target": "natural_factors",
+      "type": "分项"
+    },
+    {
+      "source": "volcanic",
+      "target": "natural_factors",
+      "type": "分项"
+    },
+    {
+      "source": "ocean_currents",
+      "target": "natural_factors",
+      "type": "分项"
+    }
+  ],
+  "name": "气候变化影响因素知识图谱"
+}

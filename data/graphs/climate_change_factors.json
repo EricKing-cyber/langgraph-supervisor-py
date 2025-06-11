@@ -1,0 +1,120 @@
+{
+  "nodes": [
+    {
+      "id": "1",
+      "name": "温室气体排放"
+    },
+    {
+      "id": "2",
+      "name": "能源消耗"
+    },
+    {
+      "id": "3",
+      "name": "土地利用变化"
+    },
+    {
+      "id": "4",
+      "name": "森林砍伐"
+    },
+    {
+      "id": "5",
+      "name": "工业活动"
+    },
+    {
+      "id": "6",
+      "name": "交通运输"
+    },
+    {
+      "id": "7",
+      "name": "气候变化"
+    },
+    {
+      "id": "8",
+      "name": "极端天气"
+    },
+    {
+      "id": "9",
+      "name": "政策干预"
+    },
+    {
+      "id": "10",
+      "name": "公众行为"
+    },
+    {
+      "id": "11",
+      "name": "自然过程"
+    },
+    {
+      "id": "12",
+      "name": "生态系统服务"
+    }
+  ],
+  "edges": [
+    {
+      "source": "2",
+      "target": "1",
+      "type": "驱动"
+    },
+    {
+      "source": "3",
+      "target": "1",
+      "type": "影响"
+    },
+    {
+      "source": "4",
+      "target": "3",
+      "type": "促进"
+    },
+    {
+      "source": "5",
+      "target": "2",
+      "type": "驱动"
+    },
+    {
+      "source": "6",
+      "target": "2",
+      "type": "驱动"
+    },
+    {
+      "source": "1",
+      "target": "7",
+      "type": "导致"
+    },
+    {
+      "source": "7",
+      "target": "8",
+      "type": "引发"
+    },
+    {
+      "source": "7",
+      "target": "12",
+      "type": "影响"
+    },
+    {
+      "source": "9",
+      "target": "2",
+      "type": "调节"
+    },
+    {
+      "source": "9",
+      "target": "3",
+      "type": "调节"
+    },
+    {
+      "source": "10",
+      "target": "9",
+      "type": "影响"
+    },
+    {
+      "source": "11",
+      "target": "7",
+      "type": "影响"
+    },
+    {
+      "source": "3",
+      "target": "12",
+      "type": "影响"
+    }
+  ],
+  "name": "climate_change_factors"
+}
